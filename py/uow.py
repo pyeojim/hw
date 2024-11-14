@@ -1,0 +1,1 @@
+print(int(bool(0)))

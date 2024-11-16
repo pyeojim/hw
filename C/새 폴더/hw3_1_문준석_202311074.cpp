@@ -41,7 +41,7 @@ public:
     Beverage(string name, double price, double calorie);
     void describe() const override {
         cout << "Beverage: " << getName() << " (ID: " << getId()
-            << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie <<
+            << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie << 
             "calories)\n";
     }
 };
@@ -57,8 +57,9 @@ public:
 };
 
 class State {
-private:
+protected:
     string s_name;
+    VendingMachine* machine;
 public:
     State(string name){
         s_name = name;
@@ -68,6 +69,11 @@ public:
         cout << "[Destructor] Destructing State: " << s_name << endl;
     };
     string getName() const { return s_name; };
+    virtual string getName() const = 0;
+    virtual ~State();
+    virtual void insertCoin(double coin) = 0;
+    virtual void ejectCoin() = 0;
+    virtual void dispense(string productName) = 0;
 };
 
 class NoCoinState : public State {

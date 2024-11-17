@@ -10,22 +10,16 @@ protected:
     double p_price;
     double p_calorie;
 public:
-    Product(string name, double price, double p_calorie){
+    Product(string name, double price, double calorie){
         p_name = name;
         p_price = price;
-        p_calorie = p_calorie;
+        p_calorie = calorie;
         id = ++nextId;
         cout << "[Constructor] Product created: "<< p_name << " (ID: " << id <<", Price: $" << p_price <<")" << endl;
-}
-    Product(){
-        id = 0;
-        p_name = "";
-        p_price = 0;
-        p_calorie = 0;
     }
     virtual ~Product(){
         cout << "[Destructor] Product destroyed: " << p_name <<" (ID: "<< id <<") "<< endl;
-}
+    }
     virtual string getName() const { return p_name; }
     virtual double getPrice() const { return p_price; }
     virtual int getId() const { return id; }
@@ -38,7 +32,13 @@ int Product::nextId = 0;
 
 class Beverage : public Product {
 public:
-    Beverage(string name, double price, double calorie);
+    Beverage(string name, double price, double calorie){
+        p_name = name;
+        p_price = price;
+        p_calorie = calorie;
+        id = ++nextId;
+        cout << "Beverage created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
+    }
     void describe() const override {
         cout << "Beverage: " << getName() << " (ID: " << getId()
             << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie << 
@@ -48,7 +48,13 @@ public:
 
 class Snack : public Product {
 public:
-    Snack(string name, double price, double calorie);
+    Snack(string name, double price, double calorie){
+        p_name = name;
+        p_price = price;
+        p_calorie = calorie;
+        id = ++nextId;
+        cout << "Snack created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
+    }
     void describe() const override {
         cout << "Snack: " << getName() << " (ID: " << getId()
             << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie <<
@@ -61,16 +67,11 @@ protected:
     string s_name;
     VendingMachine* machine;
 public:
-    State(string name){
-        s_name = name;
-        cout << "[Constructor] Constructing State: " << s_name << endl; 
-    }
-    ~State(){
+    State(VendingMachine* machine);
+    virtual ~State(){
         cout << "[Destructor] Destructing State: " << s_name << endl;
-    };
-    string getName() const { return s_name; };
+    }
     virtual string getName() const = 0;
-    virtual ~State();
     virtual void insertCoin(double coin) = 0;
     virtual void ejectCoin() = 0;
     virtual void dispense(string productName) = 0;
@@ -78,9 +79,17 @@ public:
 
 class NoCoinState : public State {
 public:
-    NoCoinState(VendingMachine* t_machine);
+    NoCoinState(VendingMachine* t_machine){
+        cout << "[Constructor] Constructing State: NoCoinState" << endl; 
+        s_name = "No Coin";
+        machine = t_machine;
+    }
     ~NoCoinState() override;
-    void insertCoin(double coin) override;
+    void insertCoin(double coin) override{
+        machine->addCoinValue(coin);
+        machine->setState(machine->getHasCoinState());
+        machine->setCoinInserted(true);
+    }
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -88,9 +97,15 @@ public:
 
 class HasCoinState : public State {
 public:
-    HasCoinState(VendingMachine* t_machine);
+    HasCoinState(VendingMachine* t_machine){
+        cout << "[Constructor] Constructing State: HasCoinState" << endl; 
+        s_name = "Has Coin";
+        machine = t_machine;
+    }
     ~HasCoinState() override;
-    void insertCoin(double coin) override;
+    void insertCoin(double coin) override{
+        machine->addCoinValue(coin);
+    }
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -98,9 +113,15 @@ public:
 
 class SoldOutState : public State {
 public:
-    SoldOutState(VendingMachine* t_machine);
+    SoldOutState(VendingMachine* t_machine){
+        cout << "[Constructor] Constructing State: SoldOutState" << endl; 
+        s_name = "Sold Out";
+        machine = t_machine;
+    }
     ~SoldOutState() override;
-    void insertCoin(double coins) override;
+    void insertCoin(double coins) override{
+        cout << "SOLD OUT: No additional coin accepted" << endl;
+    }
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -117,15 +138,16 @@ private:
     int num_of_products;
     bool hasCoin;
     double coinValue;
+
     void printState(string action) const {
     cout << "Action: " << action << " | Current State: " << currentState->getName() << " | Coin Value: " << this->coinValue << "\n";
 }
 public:
     VendingMachine(){
         cout << "[Constructor] Constructing VendingMachine" << endl;
-        noCoinState = new State("No Coin");
-        hasCoinState = new State("Has Coin");
-        soldOutState = new State("Sold Out");
+        noCoinState = new NoCoinState(this);
+        hasCoinState = new HasCoinState(this);
+        soldOutState = new SoldOutState(this);
         currentState = noCoinState;
         num_of_products = 0;
         hasCoin = false;
@@ -146,16 +168,7 @@ public:
         printState("State Changed");
     };
     void insertCoin(double coin){
-        if (currentState->getName()=="Sold Out"){
-            cout << "SOLD OUT: No additional coin accepted" << endl;
-        }
-        else{    
-            coinValue += coin;
-            if (hasInsertedCoin()==false){
-                setState(hasCoinState);
-                setCoinInserted(true);
-            }
-        }
+        currentState->insertCoin(coin);
         printState("Insert Coin");
     };
     void ejectCoin(){            
@@ -236,10 +249,11 @@ public:
     void setCoinInserted(bool inserted) { hasCoin = inserted; }
     double getCoinValue() const { return coinValue; }
     void resetCoinValue() { coinValue = 0.0; }
+    void addCoinValue(double coin) {coinValue += coin;}
 };
 
 int main() {
-    std:cout << "==========Part 1==========" << std:endl;
+    cout << "==========Part 1==========" << endl;
     VendingMachine machine; //Create a VendingMachine instance
     Product* p_cola = new Beverage("Cola", 1.50, 330); //Create a new product
     Product* p_chips = new Snack("Chips", 1.00, 150); //Create a new product

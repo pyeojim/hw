@@ -6,9 +6,11 @@
       ],
       "name": "Mingw64",
       "includePath": [
+        "${workspaceRoot}\\..\\mingw64\\include\\c++\\14.2.0",
         "${env.INCLUDE}",
         "${workspaceRoot}\\**"
       ],
+      "compilerPath": "E:\\code\\MinGW\\bin\\g++.exe",
       "intelliSenseMode": "linux-gcc-x64"
     }
   ]

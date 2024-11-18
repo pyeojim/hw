@@ -32,10 +32,7 @@ int Product::nextId = 0;
 
 class Beverage : public Product {
 public:
-    Beverage(string name, double price, double calorie){
-        p_name = name;
-        p_price = price;
-        p_calorie = calorie;
+    Beverage(string name, double price, double calorie) : Product(name, price, calorie) {
         id = ++nextId;
         cout << "Beverage created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
     }
@@ -48,10 +45,7 @@ public:
 
 class Snack : public Product {
 public:
-    Snack(string name, double price, double calorie){
-        p_name = name;
-        p_price = price;
-        p_calorie = calorie;
+    Snack(string name, double price, double calorie) : Product(name, price, calorie) {
         id = ++nextId;
         cout << "Snack created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
     }
@@ -62,12 +56,14 @@ public:
     }
 };
 
+class VendingMachine;
+
 class State {
 protected:
     string s_name;
     VendingMachine* machine;
 public:
-    State(VendingMachine* machine);
+    State(VendingMachine* machine){machine = machine;}
     virtual ~State(){
         cout << "[Destructor] Destructing State: " << s_name << endl;
     }
@@ -79,10 +75,9 @@ public:
 
 class NoCoinState : public State {
 public:
-    NoCoinState(VendingMachine* t_machine){
+    NoCoinState(VendingMachine* t_machine) : State(t_machine){
         cout << "[Constructor] Constructing State: NoCoinState" << endl; 
         s_name = "No Coin";
-        machine = t_machine;
     }
     ~NoCoinState() override;
     void insertCoin(double coin) override{
@@ -97,10 +92,9 @@ public:
 
 class HasCoinState : public State {
 public:
-    HasCoinState(VendingMachine* t_machine){
+    HasCoinState(VendingMachine* t_machine) : State(t_machine){
         cout << "[Constructor] Constructing State: HasCoinState" << endl; 
         s_name = "Has Coin";
-        machine = t_machine;
     }
     ~HasCoinState() override;
     void insertCoin(double coin) override{
@@ -113,10 +107,9 @@ public:
 
 class SoldOutState : public State {
 public:
-    SoldOutState(VendingMachine* t_machine){
+    SoldOutState(VendingMachine* t_machine) : State(t_machine){
         cout << "[Constructor] Constructing State: SoldOutState" << endl; 
         s_name = "Sold Out";
-        machine = t_machine;
     }
     ~SoldOutState() override;
     void insertCoin(double coins) override{

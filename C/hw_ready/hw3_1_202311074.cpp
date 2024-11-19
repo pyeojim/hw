@@ -33,26 +33,24 @@ int Product::nextId = 0;
 class Beverage : public Product {
 public:
     Beverage(string name, double price, double calorie) : Product(name, price, calorie) {
-        id = ++nextId;
         cout << "Beverage created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
     }
     void describe() const override {
         cout << "Beverage: " << getName() << " (ID: " << getId()
             << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie << 
-            "calories)\n";
+            " calories)\n";
     }
 };
 
 class Snack : public Product {
 public:
     Snack(string name, double price, double calorie) : Product(name, price, calorie) {
-        id = ++nextId;
         cout << "Snack created: "<< p_name <<" (" << p_calorie <<" calories)" << endl;
     }
     void describe() const override {
         cout << "Snack: " << getName() << " (ID: " << getId()
             << ", Price: $" << getPrice() << ", Calories: " << this->p_calorie <<
-            "calories)\n";
+            " calories)\n";
     }
 };
 
@@ -63,10 +61,8 @@ protected:
     string s_name;
     VendingMachine* machine;
 public:
-    State(VendingMachine* machine){machine = machine;}
-    virtual ~State(){
-        cout << "[Destructor] Destructing State: " << s_name << endl;
-    }
+    State(VendingMachine* machine){this->machine = machine;}
+    virtual ~State(){}
     virtual string getName() const = 0;
     virtual void insertCoin(double coin) = 0;
     virtual void ejectCoin() = 0;
@@ -76,15 +72,13 @@ public:
 class NoCoinState : public State {
 public:
     NoCoinState(VendingMachine* t_machine) : State(t_machine){
-        cout << "[Constructor] Constructing State: NoCoinState" << endl; 
-        s_name = "No Coin";
+        s_name = "No Coin";        
+        cout << "[Constructor] Constructing State: " << s_name << endl; 
     }
-    ~NoCoinState() override;
-    void insertCoin(double coin) override{
-        machine->addCoinValue(coin);
-        machine->setState(machine->getHasCoinState());
-        machine->setCoinInserted(true);
-    }
+    ~NoCoinState() override {
+        cout << "[Destructor] Destructing State: " << s_name << endl;
+    };
+    void insertCoin(double coin) override;
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -93,13 +87,13 @@ public:
 class HasCoinState : public State {
 public:
     HasCoinState(VendingMachine* t_machine) : State(t_machine){
-        cout << "[Constructor] Constructing State: HasCoinState" << endl; 
-        s_name = "Has Coin";
+        s_name = "Has Coin";        
+        cout << "[Constructor] Constructing State: " << s_name << endl; 
     }
-    ~HasCoinState() override;
-    void insertCoin(double coin) override{
-        machine->addCoinValue(coin);
-    }
+    ~HasCoinState() override {
+        cout << "[Destructor] Destructing State: " << s_name << endl;
+    };
+    void insertCoin(double coin) override;
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -108,13 +102,13 @@ public:
 class SoldOutState : public State {
 public:
     SoldOutState(VendingMachine* t_machine) : State(t_machine){
-        cout << "[Constructor] Constructing State: SoldOutState" << endl; 
-        s_name = "Sold Out";
+        s_name = "Sold Out";        
+        cout << "[Constructor] Constructing State: " << s_name << endl; 
     }
-    ~SoldOutState() override;
-    void insertCoin(double coins) override{
-        cout << "SOLD OUT: No additional coin accepted" << endl;
-    }
+    ~SoldOutState() override {
+        cout << "[Destructor] Destructing State: " << s_name << endl;
+    };
+    void insertCoin(double coins) override;
     void ejectCoin() override;
     void dispense(string productName) override;
     string getName() const override { return this->s_name; }
@@ -165,35 +159,12 @@ public:
         printState("Insert Coin");
     };
     void ejectCoin(){            
-        if (coinValue > 0){
-            cout << "Change returned: $" << coinValue << endl;
-        }
-        resetCoinValue();
-        setCoinInserted(false);
-        if (getInventoryCount()==1){
-            setState(soldOutState);
-        }
-        else
-        { 
-            setState(noCoinState);
-        }
+        currentState->ejectCoin();
+        printState("Eject Coin");
     };
     void dispense(string productName){
-        if (isProductAvailable(productName)){
-            if (getCoinValue() >= getProductPrice(productName)){
-                coinValue -= getProductPrice(productName);
-                ejectCoin();
-                removeProduct(productName);
-            }
-            else{
-                cout << "Insufficient funds. Please insert more coins." << endl;
-                cout << "Current balance: $" << coinValue <<", Required: $" <<getProductPrice(productName) << endl;               
-            }
-        }
-        else{
-            cout << "No product to dispense" << endl;
-        }
-        printState("Dispense"); 
+        currentState->dispense(productName);
+        printState("Dispense");
     };
     Product* removeProduct(string productName){
         for (int counter1{0}; counter1 < getInventoryCount(); counter1++)
@@ -244,6 +215,51 @@ public:
     void resetCoinValue() { coinValue = 0.0; }
     void addCoinValue(double coin) {coinValue += coin;}
 };
+
+void NoCoinState::insertCoin(double coin){
+    machine->addCoinValue(coin);
+    machine->setState(machine->getHasCoinState());
+    machine->setCoinInserted(true);}
+void NoCoinState::ejectCoin(){}
+void NoCoinState::dispense(string productname){        
+    cout << "Insufficient funds. Please insert more coins." << endl;
+    cout << "Current balance: $" << machine->getCoinValue() <<", Required: $" <<machine->getProductPrice(productname) << endl;               
+    }
+
+void HasCoinState::insertCoin(double coin){
+    machine->addCoinValue(coin);}
+void HasCoinState::ejectCoin(){
+    if (machine->getCoinValue()!=0){     
+        cout << "Change returned: $" << machine->getCoinValue() << endl;    
+        machine->resetCoinValue();
+    }
+    machine->setCoinInserted(false);
+    if (machine->getInventoryCount()==1){
+        machine->setState(machine->getSoldOutState());
+    }
+    else{            
+    machine->setState(machine->getNoCoinState());
+    }}
+void HasCoinState::dispense(string productname){    
+    if (machine->isProductAvailable(productname)){
+        if (machine->getCoinValue() >= machine->getProductPrice(productname)){
+            machine->addCoinValue(-(machine->getProductPrice(productname))); 
+            ejectCoin();                
+            machine->removeProduct(productname);
+        }
+        else{
+            cout << "Insufficient funds. Please insert more coins." << endl;
+            cout << "Current balance: $" << machine->getCoinValue() <<", Required: $" <<machine->getProductPrice(productname) << endl;               
+        }
+    }
+    else{
+        cout << "No product to dispense" << endl;
+    }}
+
+void SoldOutState::insertCoin(double coin){
+    cout << "SOLD OUT: No additional coin accepted" << endl;}
+void SoldOutState::ejectCoin(){}
+void SoldOutState::dispense(string productname){cout << "No product to dispense" << endl;}
 
 int main() {
     cout << "==========Part 1==========" << endl;

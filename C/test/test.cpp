@@ -11,4 +11,5 @@ int main() {
 	cout << *pNums1 << endl << *pNums2 << endl;
 	cout << iNums[1] << endl << pNums1[1] << endl << pNums2[1] << endl;
 	return 0;
+	return 0;
 }

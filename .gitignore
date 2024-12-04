@@ -1,3 +1,9 @@
 gitignore
 
 .vs/
+/C/etc
+/C/study.sln
+/C/C_study.sln
+/C/C_study.vcxproj
+/C/C_study.vcxproj.filters
+/C/C_study.vcxproj.user
